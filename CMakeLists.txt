@@ -16,47 +16,21 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 
-# find_package(catkin REQUIRED COMPONENTS
-#     image_transport
-#     roscpp
-#     std_msgs
-#     geometry_msgs
-#     message_generation
-#     dynamic_reconfigure
-#     cv_bridge
-#     tf
-#     )
 find_package(ament_cmake REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tf2_ros REQUIRED)
-find_package(image_transport REQUIRED)
 find_package(OpenCV REQUIRED)
 
-# generate_dynamic_reconfigure_options(cfg/whycon.cfg)
-
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-# catkin_package(
-#     #  INCLUDE_DIRS include
-#     #  LIBRARIES charging
-#     #  CATKIN_DEPENDS image_transport roscpp rospy std_msgs
-#     CATKIN_DEPENDS message_runtime std_msgs geometry_msgs dynamic_reconfigure
-#     #  DEPENDS system_lib
-#     )
 set(THIS_PACKAGE_INCLUDE_DEPENDS
     ament_cmake
     rclcpp
     visualization_msgs
-    # dynamic_reconfigure
+    sensor_msgs
     tf2_ros
+    ament_index_cpp
 )
 ###########
 ## Build ##
@@ -95,6 +69,11 @@ install(TARGETS whycon_node
 
 install(DIRECTORY
     launch
+    DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY
+    config
     DESTINATION share/${PROJECT_NAME}
 )
 

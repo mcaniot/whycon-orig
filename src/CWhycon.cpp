@@ -1,5 +1,7 @@
 #include "CWhycon.h"
 std::string PKG_NAME = "whycon_node";
+using std::placeholders::_1;
+
 /*manual calibration can be initiated by pressing 'r' and then clicking circles at four positions (0,0)(fieldLength,0)...*/
 void CWhycon::manualcalibration(){
     if (currentSegmentArray[0].valid){
@@ -345,29 +347,6 @@ void CWhycon::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg){
     if (useGui) processKeys();
 }
 
-// dynamic parameter reconfiguration
-// void CWhycon::reconfigureCallback(CWhycon *whycon, whycon_ros::whyconConfig& config, uint32_t level){
-//     RCLCPP_INFO(get_logger(), "[Reconfigure Request]\n"
-//             "numMarkers %d circleDiam %lf identify %d\n"
-//             "initCircularityTolerance %lf finalCircularityTolerance %lf\n"
-//             "areaRatioTolerance %lf centerDistTolerance %lf centerDistToleranceAbs %lf\n",
-//             config.numMarkers, config.circleDiameter, config.identify,
-//             config.initialCircularityTolerance, config.finalCircularityTolerance,
-//             config.areaRatioTolerance,config.centerDistanceToleranceRatio,config.centerDistanceToleranceAbs);
-
-//     whycon->numMarkers = (config.numMarkers > whycon->maxMarkers) ? whycon->maxMarkers : config.numMarkers;
-//     whycon->fieldLength = config.fieldLength;
-//     whycon->fieldWidth = config.fieldWidth;
-//     whycon->identify = config.identify;
-
-//     whycon->trans->reconfigure(config.circleDiameter);
-
-//     for (int i = 0;i<whycon->maxMarkers;i++) whycon->detectorArray[i]->reconfigure(
-//             config.initialCircularityTolerance, config.finalCircularityTolerance,
-//             config.areaRatioTolerance,config.centerDistanceToleranceRatio,
-//             config.centerDistanceToleranceAbs, config.identify, config.minSize);
-// }
-
 // cleaning up
 CWhycon::~CWhycon(){
     RCLCPP_DEBUG(get_logger(),"Releasing memory.");
@@ -389,51 +368,51 @@ CWhycon::~CWhycon(){
 CWhycon::CWhycon()
     : Node(PKG_NAME)
 {
-    // image_transport::ImageTransport it(*n);
-    // image = new CRawImage(imageWidth,imageHeight, 3);
+    image = new CRawImage(imageWidth,imageHeight, 3);
 
-    // // loading params and args from launch file
-    // fontPath = fPath;
-    // calibDefPath = calPath;
-    // this->param("useGui", useGui, true);
-    // this->param("idBits", idBits, 5);
-    // this->param("idSamples", idSamples, 360);
-    // this->param("hammingDist", hammingDist, 1);
-    // this->param("maxMarkers", maxMarkers, 50);
+    // loading params and args from launch file
+    std::string package_share_directory = ament_index_cpp::get_package_share_directory(PKG_NAME);
+    fontPath = package_share_directory + "/etc/font.ttf";
+    calibDefPath = package_share_directory + "/etc/default.cal";
+    this->get_parameter("useGui", useGui);
+    this->get_parameter("idBits", idBits);
+    this->get_parameter("idSamples", idSamples);
+    this->get_parameter("hammingDist", hammingDist);
+    this->get_parameter("maxMarkers", maxMarkers);
 
-    // moveOne = moveVal;
-    // moveOne  = 0;
-    // calibTmp = (STrackedObject*) malloc(calibrationSteps * sizeof(STrackedObject));
+    moveOne = moveVal;
+    moveOne  = 0;
+    calibTmp = (STrackedObject*) malloc(calibrationSteps * sizeof(STrackedObject));
 
-    // objectArray = (STrackedObject*) malloc(maxMarkers * sizeof(STrackedObject));
-    // currInnerSegArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
-    // currentSegmentArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
-    // lastSegmentArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
+    objectArray = (STrackedObject*) malloc(maxMarkers * sizeof(STrackedObject));
+    currInnerSegArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
+    currentSegmentArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
+    lastSegmentArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
 
-    // // determine gui size so that it fits the screen
-    // while (imageHeight/guiScale > screenHeight || imageHeight/guiScale > screenWidth) guiScale = guiScale*2;
+    // determine gui size so that it fits the screen
+    while (imageHeight/guiScale > screenHeight || imageHeight/guiScale > screenWidth) guiScale = guiScale*2;
 
-    // // initialize GUI, image structures, coordinate transformation modules
-    // if (useGui) gui = new CGui(imageWidth,imageHeight,guiScale, fontPath.c_str());
-    // trans = new CTransformation(imageWidth,imageHeight,circleDiameter, calibDefPath.c_str());
-    // trans->transformType = TRANSFORM_NONE;		//in our case, 2D is the default
+    // initialize GUI, image structures, coordinate transformation modules
+    if (useGui) gui = new CGui(imageWidth,imageHeight,guiScale, fontPath.c_str());
+    trans = new CTransformation(imageWidth,imageHeight,circleDiameter, calibDefPath.c_str());
+    trans->transformType = TRANSFORM_NONE;		//in our case, 2D is the default
 
-    // detectorArray = (CCircleDetect**) malloc(maxMarkers * sizeof(CCircleDetect*));
+    detectorArray = (CCircleDetect**) malloc(maxMarkers * sizeof(CCircleDetect*));
 
-    // // initialize the circle detectors - each circle has its own detector instance 
-    // for (int i = 0;i<maxMarkers;i++) detectorArray[i] = new CCircleDetect(imageWidth,imageHeight,identify, idBits, idSamples, hammingDist);
-    // image->getSaveNumber();
+    // initialize the circle detectors - each circle has its own detector instance 
+    for (int i = 0;i<maxMarkers;i++) detectorArray[i] = new CCircleDetect(imageWidth,imageHeight,identify, idBits, idSamples, hammingDist);
+    image->getSaveNumber();
 
-    // decoder = new CNecklace(idBits,idSamples,hammingDist);
+    decoder = new CNecklace(idBits,idSamples,hammingDist);
 
-    // // initialize dynamic reconfiguration feedback
-    // dynSer = boost::bind(&CWhycon::reconfigureCallback, this, _1, _2);
-    // server.setCallback(dynSer);
-
-    // // subscribe to camera topic, publish topis with card position, rotation and ID
-    // subInfo = this->subscribe("/camera/camera_info", 1, &CWhycon::cameraInfoCallback, this);
-    // subImg = it.subscribe("/camera/image_raw", 1, &CWhycon::imageCallback, this);
-    // markers_pub = this->advertise<whycon_ros::MarkerArray>("markers", 1);
+    // subscribe to camera topic, publish topis with card position, rotation and ID
+    subInfo = this->create_subscription<sensor_msgs::msg::CameraInfo>(
+        "/camera/camera_info", 10,
+        std::bind(&CWhycon::cameraInfoCallback, this, _1));
+    subImg = this->create_subscription<sensor_msgs::msg::Image>(
+        "/camera/image_raw", 10,
+        std::bind(&CWhycon::imageCallback, this, _1));
+    markers_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>("markers", 1);
 }
 
 int main(int argc, char *argv[]) {

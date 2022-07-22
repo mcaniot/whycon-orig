@@ -19,12 +19,10 @@
 #include "CRawImage.h"
 
 // ROS libraries
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include "rclcpp/rclcpp.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Vector3.h>
-#include "image_transport/image_transport.hpp"
-// #include <dynamic_reconfigure/server.h>
-// #include <whycon_ros/whyconConfig.h>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -67,9 +65,6 @@ class CWhycon : public rclcpp::Node
         void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
         void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
-        // dynamic parameter reconfiguration
-        // static void reconfigureCallback(CWhycon *whycon, whycon_ros::whyconConfig& config, uint32_t level);
-
     private:
 
         // GUI-related stuff
@@ -109,13 +104,10 @@ class CWhycon : public rclcpp::Node
         CTransformation *trans;         // allows to transform from image to metric coordinates
         CNecklace *decoder;             // Necklace code decoder
 
-        // rclcpp::Subscriber subInfo;                // camera info subscriber
-        // image_transport::Subscriber subImg;     // image raw subscriber
+        rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr subInfo;                // camera info subscriber
+        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subImg;                // image raw subscriber
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr markers_pub; // publisher of MarkerArray
         CRawImage *image;                       // encapsulation of image raw data
-
-        // dynamic_reconfigure::Server<whycon_ros::whyconConfig> server;                   // server for dynamic reconfigure
-        // dynamic_reconfigure::Server<whycon_ros::whyconConfig>::CallbackType dynSer;     // callback server to handle reconfigure function
 
         std::string fontPath;           // path to GUI font
         std::string calibDefPath;       // path to user defined coordinate calibration

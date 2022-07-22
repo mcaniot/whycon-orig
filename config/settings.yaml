@@ -1,0 +1,30 @@
+whycon_ros:
+  ros__parameters:
+    # Whether to identify IDs
+    identify : true
+    #Marker's outer diameter [cm]
+    circleDiameter : 12.2
+    #Number of markers to track
+    maxMarkers : 10
+    # Min size of marker [px]
+    minSize : 30
+    #Distance of markers in x-axis in custom coordinate system
+    fieldLength : 1.0
+    #Distance of markers in y-axis in custom coordinate system
+    fieldWidth : 1.0
+    #Initial circularity test tolerance [%]
+    initialCircularityTolerance : 100
+    #Final circularity test tolerance [%]
+    finalCircularityTolerance : 2.0
+    #Tolerance of black and white area ratios [%]
+    areaRatioTolerance : 40.0
+    #Concentricity test ratio [%]
+    centerDistanceToleranceRatio : 10.0
+    #Concentricity test absolute [px]
+    centerDistanceToleranceAbs : 5.0
+
+    useGui: true
+    idBits: 5
+    idSamples: 360
+    hammingdDist: 1
+
