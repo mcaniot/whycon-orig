@@ -244,7 +244,7 @@ void CGui::drawLine(float sx1,float sx2,float sy1,float sy2)
     }
 }
 
-void CGui::drawEllipse(SSegment s,STrackedObject t)
+void CGui::drawEllipse(SSegment s)
 {
     float sx1,sx2,sy1,sy2;
     int x,y;

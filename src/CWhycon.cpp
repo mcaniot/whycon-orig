@@ -1,5 +1,5 @@
 #include "CWhycon.h"
-
+std::string PKG_NAME = "whycon_node";
 /*manual calibration can be initiated by pressing 'r' and then clicking circles at four positions (0,0)(fieldLength,0)...*/
 void CWhycon::manualcalibration(){
     if (currentSegmentArray[0].valid){
@@ -107,7 +107,6 @@ void CWhycon::processKeys(){
 
     //process keys 
     keys = SDL_GetKeyState(&keyNumber);
-    bool shiftPressed = keys[SDLK_RSHIFT] || keys[SDLK_LSHIFT];
 
     //program control - (s)top, (p)ause+move one frame and resume
     if (keys[SDLK_ESCAPE]) stop = true;
@@ -155,230 +154,229 @@ void CWhycon::processKeys(){
     memcpy(lastKeys,keys,keyNumber);
 }
 
-void CWhycon::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg){
-    if(msg->K[0] == 0){
-        ROS_FATAL("ERROR: Camera is not calibrated! Shutting down!");
-        ros::shutdown();
-    }
-    if(msg->K[0] != intrinsic.at<float>(0,0) || msg->K[2] != intrinsic.at<float>(0,2) || msg->K[4] != intrinsic.at<float>(1,1) ||  msg->K[5] != intrinsic.at<float>(1,2)){
-        for(int i = 0; i < 5; i++) distCoeffs.at<float>(i) = msg->D[i];
-        int tmpIdx = 0;
-        for(int i = 0; i < 3; i++){
-            for(int j = 0; j < 3; j++){
-                intrinsic.at<float>(i, j) = msg->K[tmpIdx++];
-            }
-        }
-        trans->updateParams(intrinsic, distCoeffs);
-    }
-}
+// void CWhycon::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg){
+//     if(msg->K[0] == 0){
+//         rclcpp::shutdown();
+//     }
+//     if(msg->K[0] != intrinsic.at<float>(0,0) || msg->K[2] != intrinsic.at<float>(0,2) || msg->K[4] != intrinsic.at<float>(1,1) ||  msg->K[5] != intrinsic.at<float>(1,2)){
+//         for(int i = 0; i < 5; i++) distCoeffs.at<float>(i) = msg->D[i];
+//         int tmpIdx = 0;
+//         for(int i = 0; i < 3; i++){
+//             for(int j = 0; j < 3; j++){
+//                 intrinsic.at<float>(i, j) = msg->K[tmpIdx++];
+//             }
+//         }
+//         trans->updateParams(intrinsic, distCoeffs);
+//     }
+// }
 
-void CWhycon::imageCallback(const sensor_msgs::ImageConstPtr& msg){
-    //setup timers to assess system performance
-    CTimer timer;
-    timer.reset();
-    timer.start();
+// void CWhycon::imageCallback(const sensor_msgs::ImageConstPtr& msg){
+//     //setup timers to assess system performance
+//     CTimer timer;
+//     timer.reset();
+//     timer.start();
 
-    CTimer globalTimer;
-    globalTimer.reset();
-    globalTimer.start();
+//     CTimer globalTimer;
+//     globalTimer.reset();
+//     globalTimer.start();
 
-    // check if readjusting of camera is needed
-    if (image->bpp != msg->step/msg->width || image->width != msg->width || image->height != msg->height){
-        delete image;
-        ROS_INFO("Readjusting image format from %ix%i %ibpp, to %ix%i %ibpp.",
-                image->width, image->height, image->bpp, msg->width, msg->height, msg->step/msg->width);
-        image = new CRawImage(msg->width,msg->height,msg->step/msg->width);
-        if(useGui){
-            while(image->height/guiScale > screenHeight || image->height/guiScale > screenWidth) guiScale = guiScale*2;
-            if(gui == NULL){
-                gui = new CGui(msg->width, msg->height, guiScale, fontPath.c_str());
-            }else{
-                delete gui;
-                gui = new CGui(msg->width, msg->height, guiScale, fontPath.c_str());
-            }
-        }
-    }
+//     // check if readjusting of camera is needed
+//     if (image->bpp != msg->step/msg->width || image->width != msg->width || image->height != msg->height){
+//         delete image;
+//         RCLCPP_INFO(get_logger(),"Readjusting image format from %ix%i %ibpp, to %ix%i %ibpp.",
+//                 image->width, image->height, image->bpp, msg->width, msg->height, msg->step/msg->width);
+//         image = new CRawImage(msg->width,msg->height,msg->step/msg->width);
+//         if(useGui){
+//             while(image->height/guiScale > screenHeight || image->height/guiScale > screenWidth) guiScale = guiScale*2;
+//             if(gui == NULL){
+//                 gui = new CGui(msg->width, msg->height, guiScale, fontPath.c_str());
+//             }else{
+//                 delete gui;
+//                 gui = new CGui(msg->width, msg->height, guiScale, fontPath.c_str());
+//             }
+//         }
+//     }
 
-    memcpy(image->data,(void*)&msg->data[0],msg->step*msg->height);
+//     memcpy(image->data,(void*)&msg->data[0],msg->step*msg->height);
 
-    numFound = numStatic = 0;
-    timer.reset();
+//     numFound = numStatic = 0;
+//     timer.reset();
 
-    // track the robots found in the last attempt 
-    for (int i = 0;i<numMarkers;i++){
-        if (currentSegmentArray[i].valid){
-            lastSegmentArray[i] = currentSegmentArray[i];
-            currentSegmentArray[i] = detectorArray[i]->findSegment(image,lastSegmentArray[i]);
-            currInnerSegArray[i] = detectorArray[i]->getInnerSegment();
-        }
-    }
+//     // track the robots found in the last attempt 
+//     for (int i = 0;i<numMarkers;i++){
+//         if (currentSegmentArray[i].valid){
+//             lastSegmentArray[i] = currentSegmentArray[i];
+//             currentSegmentArray[i] = detectorArray[i]->findSegment(image,lastSegmentArray[i]);
+//             currInnerSegArray[i] = detectorArray[i]->getInnerSegment();
+//         }
+//     }
 
-    // search for untracked (not detected in the last frame) robots 
-    for (int i = 0;i<numMarkers;i++){
-        if (currentSegmentArray[i].valid == false){
-            lastSegmentArray[i].valid = false;
-            currentSegmentArray[i] = detectorArray[i]->findSegment(image,lastSegmentArray[i]);
-            currInnerSegArray[i] = detectorArray[i]->getInnerSegment();
-        }
-        if (currentSegmentArray[i].valid == false) break;		//does not make sense to search for more patterns if the last one was not found
-    }
+//     // search for untracked (not detected in the last frame) robots 
+//     for (int i = 0;i<numMarkers;i++){
+//         if (currentSegmentArray[i].valid == false){
+//             lastSegmentArray[i].valid = false;
+//             currentSegmentArray[i] = detectorArray[i]->findSegment(image,lastSegmentArray[i]);
+//             currInnerSegArray[i] = detectorArray[i]->getInnerSegment();
+//         }
+//         if (currentSegmentArray[i].valid == false) break;		//does not make sense to search for more patterns if the last one was not found
+//     }
 
-    // perform transformations from camera to world coordinates
-    for (int i = 0;i<numMarkers;i++){
-        if (currentSegmentArray[i].valid){
-            int step = image->bpp;
-            int pos;
-            pos = ((int)currentSegmentArray[i].x+((int)currentSegmentArray[i].y)*image->width);
-            image->data[step*pos+0] = 255;
-            image->data[step*pos+1] = 0;
-            image->data[step*pos+2] = 0;
-            pos = ((int)currInnerSegArray[i].x+((int)currInnerSegArray[i].y)*image->width);
-            image->data[step*pos+0] = 0;
-            image->data[step*pos+1] = 255;
-            image->data[step*pos+2] = 0;
+//     // perform transformations from camera to world coordinates
+//     for (int i = 0;i<numMarkers;i++){
+//         if (currentSegmentArray[i].valid){
+//             int step = image->bpp;
+//             int pos;
+//             pos = ((int)currentSegmentArray[i].x+((int)currentSegmentArray[i].y)*image->width);
+//             image->data[step*pos+0] = 255;
+//             image->data[step*pos+1] = 0;
+//             image->data[step*pos+2] = 0;
+//             pos = ((int)currInnerSegArray[i].x+((int)currInnerSegArray[i].y)*image->width);
+//             image->data[step*pos+0] = 0;
+//             image->data[step*pos+1] = 255;
+//             image->data[step*pos+2] = 0;
 
-            objectArray[i] = trans->transform(currentSegmentArray[i]);
+//             objectArray[i] = trans->transform(currentSegmentArray[i]);
 
-            if(identify){
-                int segmentID = decoder->identifySegment(&currentSegmentArray[i], &objectArray[i], image) + 1;
-                // if (debug) printf("SEGMENT ID: %i\n", segmentID);
-                if (segmentID > -1){
-                    // objectArray[i].yaw = currentSegmentArray[i].angle;
-                    currentSegmentArray[i].ID = segmentID;
-                }else{
-                    currentSegmentArray[i].angle = lastSegmentArray[i].angle;
-                    currentSegmentArray[i].ID = lastSegmentArray[i].ID;
-                }
-            }else{
-                float dist1 = sqrt((currInnerSegArray[i].x-objectArray[i].segX1)*(currInnerSegArray[i].x-objectArray[i].segX1)+(currInnerSegArray[i].y-objectArray[i].segY1)*(currInnerSegArray[i].y-objectArray[i].segY1));
-                float dist2 = sqrt((currInnerSegArray[i].x-objectArray[i].segX2)*(currInnerSegArray[i].x-objectArray[i].segX2)+(currInnerSegArray[i].y-objectArray[i].segY2)*(currInnerSegArray[i].y-objectArray[i].segY2));
-                if(dist1 < dist2){
-                    currentSegmentArray[i].x = objectArray[i].segX1;
-                    currentSegmentArray[i].y = objectArray[i].segY1;
-                    objectArray[i].x = objectArray[i].x1;
-                    objectArray[i].y = objectArray[i].y1;
-                    objectArray[i].z = objectArray[i].z1;
-                    objectArray[i].pitch = objectArray[i].pitch1;
-                    objectArray[i].roll = objectArray[i].roll1;
-                    objectArray[i].yaw = objectArray[i].yaw1;
-                }else{
-                    currentSegmentArray[i].x = objectArray[i].segX2;
-                    currentSegmentArray[i].y = objectArray[i].segY2;
-                    objectArray[i].x = objectArray[i].x2;
-                    objectArray[i].y = objectArray[i].y2;
-                    objectArray[i].z = objectArray[i].z2;
-                    objectArray[i].pitch = objectArray[i].pitch2;
-                    objectArray[i].roll = objectArray[i].roll2;
-                    objectArray[i].yaw = objectArray[i].yaw2;
-                }
-                currentSegmentArray[i].angle = 0;
-            }
+//             if(identify){
+//                 int segmentID = decoder->identifySegment(&currentSegmentArray[i], &objectArray[i], image) + 1;
+//                 // if (debug) printf("SEGMENT ID: %i\n", segmentID);
+//                 if (segmentID > -1){
+//                     // objectArray[i].yaw = currentSegmentArray[i].angle;
+//                     currentSegmentArray[i].ID = segmentID;
+//                 }else{
+//                     currentSegmentArray[i].angle = lastSegmentArray[i].angle;
+//                     currentSegmentArray[i].ID = lastSegmentArray[i].ID;
+//                 }
+//             }else{
+//                 float dist1 = sqrt((currInnerSegArray[i].x-objectArray[i].segX1)*(currInnerSegArray[i].x-objectArray[i].segX1)+(currInnerSegArray[i].y-objectArray[i].segY1)*(currInnerSegArray[i].y-objectArray[i].segY1));
+//                 float dist2 = sqrt((currInnerSegArray[i].x-objectArray[i].segX2)*(currInnerSegArray[i].x-objectArray[i].segX2)+(currInnerSegArray[i].y-objectArray[i].segY2)*(currInnerSegArray[i].y-objectArray[i].segY2));
+//                 if(dist1 < dist2){
+//                     currentSegmentArray[i].x = objectArray[i].segX1;
+//                     currentSegmentArray[i].y = objectArray[i].segY1;
+//                     objectArray[i].x = objectArray[i].x1;
+//                     objectArray[i].y = objectArray[i].y1;
+//                     objectArray[i].z = objectArray[i].z1;
+//                     objectArray[i].pitch = objectArray[i].pitch1;
+//                     objectArray[i].roll = objectArray[i].roll1;
+//                     objectArray[i].yaw = objectArray[i].yaw1;
+//                 }else{
+//                     currentSegmentArray[i].x = objectArray[i].segX2;
+//                     currentSegmentArray[i].y = objectArray[i].segY2;
+//                     objectArray[i].x = objectArray[i].x2;
+//                     objectArray[i].y = objectArray[i].y2;
+//                     objectArray[i].z = objectArray[i].z2;
+//                     objectArray[i].pitch = objectArray[i].pitch2;
+//                     objectArray[i].roll = objectArray[i].roll2;
+//                     objectArray[i].yaw = objectArray[i].yaw2;
+//                 }
+//                 currentSegmentArray[i].angle = 0;
+//             }
 
-            numFound++;
-            if (currentSegmentArray[i].x == lastSegmentArray[i].x) numStatic++;
+//             numFound++;
+//             if (currentSegmentArray[i].x == lastSegmentArray[i].x) numStatic++;
 
-        }
-    }
-    // if(numFound > 0) ROS_INFO("Pattern detection time: %i us. Found: %i Static: %i.",globalTimer.getTime(),numFound,numStatic);
-    evalTime = timer.getTime();
+//         }
+//     }
+//     // if(numFound > 0) ROS_INFO("Pattern detection time: %i us. Found: %i Static: %i.",globalTimer.getTime(),numFound,numStatic);
+//     evalTime = timer.getTime();
 
-    // publishing information about tags 
-    whycon_ros::MarkerArray markerArray;
-    markerArray.header = msg->header;
+//     // publishing information about tags 
+//     whycon_ros::MarkerArray markerArray;
+//     markerArray.header = msg->header;
 
-    for (int i = 0;i<numMarkers;i++){
-        if (currentSegmentArray[i].valid){
-            // printf("ID %d\n", currentSegmentArray[i].ID);
-            whycon_ros::Marker marker;
+//     for (int i = 0;i<numMarkers;i++){
+//         if (currentSegmentArray[i].valid){
+//             // printf("ID %d\n", currentSegmentArray[i].ID);
+//             whycon_ros::Marker marker;
 
-            marker.id = currentSegmentArray[i].ID;
-            marker.u = currentSegmentArray[i].x;
-            marker.v = currentSegmentArray[i].y;
-            marker.size = currentSegmentArray[i].size;
+//             marker.id = currentSegmentArray[i].ID;
+//             marker.u = currentSegmentArray[i].x;
+//             marker.v = currentSegmentArray[i].y;
+//             marker.size = currentSegmentArray[i].size;
 
-            // Convert to ROS standard Coordinate System
-            marker.position.position.x = -objectArray[i].y;
-            marker.position.position.y = -objectArray[i].z;
-            marker.position.position.z = objectArray[i].x;
+//             // Convert to ROS standard Coordinate System
+//             marker.position.position.x = -objectArray[i].y;
+//             marker.position.position.y = -objectArray[i].z;
+//             marker.position.position.z = objectArray[i].x;
 
-            // Convert YPR to Quaternion
-            /*tf::Quaternion q;
-            q.setRPY(objectArray[i].roll, objectArray[i].pitch, objectArray[i].yaw);
-            marker.position.orientation.x = q.getX();
-            marker.position.orientation.y = q.getY();
-            marker.position.orientation.z = q.getZ();
-            marker.position.orientation.w = q.getW();*/
+//             // Convert YPR to Quaternion
+//             /*tf::Quaternion q;
+//             q.setRPY(objectArray[i].roll, objectArray[i].pitch, objectArray[i].yaw);
+//             marker.position.orientation.x = q.getX();
+//             marker.position.orientation.y = q.getY();
+//             marker.position.orientation.z = q.getZ();
+//             marker.position.orientation.w = q.getW();*/
 
-            tf::Vector3 axis_vector(objectArray[i].pitch, objectArray[i].roll, objectArray[i].yaw);
-            tf::Vector3 up_vector(0.0, 0.0, 1.0);
-            tf::Vector3 right_vector = axis_vector.cross(up_vector);
-            right_vector.normalized();
-            tf::Quaternion quat(right_vector, -1.0*acos(axis_vector.dot(up_vector)));
-            quat.normalize();
-            geometry_msgs::Quaternion marker_orientation;
-            tf::quaternionTFToMsg(quat, marker_orientation);
+//             tf::Vector3 axis_vector(objectArray[i].pitch, objectArray[i].roll, objectArray[i].yaw);
+//             tf::Vector3 up_vector(0.0, 0.0, 1.0);
+//             tf::Vector3 right_vector = axis_vector.cross(up_vector);
+//             right_vector.normalized();
+//             tf::Quaternion quat(right_vector, -1.0*acos(axis_vector.dot(up_vector)));
+//             quat.normalize();
+//             geometry_msgs::Quaternion marker_orientation;
+//             tf::quaternionTFToMsg(quat, marker_orientation);
 
-            marker.position.orientation = marker_orientation;
+//             marker.position.orientation = marker_orientation;
 
-            marker.yaw = currentSegmentArray[i].angle;
+//             marker.yaw = currentSegmentArray[i].angle;
 
-            markerArray.markers.push_back(marker);
-        }
-    }
+//             markerArray.markers.push_back(marker);
+//         }
+//     }
 
-    if(markerArray.markers.size() > 0) markers_pub.publish(markerArray);
+//     if(markerArray.markers.size() > 0) markers_pub.publish(markerArray);
 
-    //draw stuff on the GUI 
-    if (useGui){
-        gui->drawImage(image);
-        gui->drawTimeStats(evalTime,numMarkers);
-        gui->displayHelp(displayHelp);
-        gui->guideCalibration(calibNum,fieldLength,fieldWidth);
-    }
-    for (int i = 0;i<numMarkers && useGui && drawCoords;i++){
-        if (currentSegmentArray[i].valid) gui->drawStats(currentSegmentArray[i].minx-30,currentSegmentArray[i].maxy,objectArray[i],trans->transformType == TRANSFORM_2D);
-    }
+//     //draw stuff on the GUI 
+//     if (useGui){
+//         gui->drawImage(image);
+//         gui->drawTimeStats(evalTime,numMarkers);
+//         gui->displayHelp(displayHelp);
+//         gui->guideCalibration(calibNum,fieldLength,fieldWidth);
+//     }
+//     for (int i = 0;i<numMarkers && useGui && drawCoords;i++){
+//         if (currentSegmentArray[i].valid) gui->drawStats(currentSegmentArray[i].minx-30,currentSegmentArray[i].maxy,objectArray[i],trans->transformType == TRANSFORM_2D);
+//     }
 
-    //establishing the coordinate system by manual or autocalibration
-    if (autocalibrate && numFound == numMarkers) autocalibration();
-    if (calibNum < 4) manualcalibration();
+//     //establishing the coordinate system by manual or autocalibration
+//     if (autocalibrate && numFound == numMarkers) autocalibration();
+//     if (calibNum < 4) manualcalibration();
 
-    /* empty for-cycle that isn't used even in master orig version
-       for (int i = 0;i<numMarkers;i++){
-    //if (currentSegmentArray[i].valid) printf("Object %i %03f %03f %03f %03f %03f\n",i,objectArray[i].x,objectArray[i].y,objectArray[i].z,objectArray[i].error,objectArray[i].esterror);
-    }*/
+//     /* empty for-cycle that isn't used even in master orig version
+//        for (int i = 0;i<numMarkers;i++){
+//     //if (currentSegmentArray[i].valid) printf("Object %i %03f %03f %03f %03f %03f\n",i,objectArray[i].x,objectArray[i].y,objectArray[i].z,objectArray[i].error,objectArray[i].esterror);
+//     }*/
 
-    //gui->saveScreen(runs);
-    if (useGui) gui->update();
-    if (useGui) processKeys();
-}
+//     //gui->saveScreen(runs);
+//     if (useGui) gui->update();
+//     if (useGui) processKeys();
+// }
 
 // dynamic parameter reconfiguration
-void CWhycon::reconfigureCallback(CWhycon *whycon, whycon_ros::whyconConfig& config, uint32_t level){
-    ROS_INFO("[Reconfigure Request]\n"
-            "numMarkers %d circleDiam %lf identify %d\n"
-            "initCircularityTolerance %lf finalCircularityTolerance %lf\n"
-            "areaRatioTolerance %lf centerDistTolerance %lf centerDistToleranceAbs %lf\n",
-            config.numMarkers, config.circleDiameter, config.identify,\
-            config.initialCircularityTolerance, config.finalCircularityTolerance,\
-            config.areaRatioTolerance,config.centerDistanceToleranceRatio,config.centerDistanceToleranceAbs);
+// void CWhycon::reconfigureCallback(CWhycon *whycon, whycon_ros::whyconConfig& config, uint32_t level){
+//     RCLCPP_INFO(get_logger(), "[Reconfigure Request]\n"
+//             "numMarkers %d circleDiam %lf identify %d\n"
+//             "initCircularityTolerance %lf finalCircularityTolerance %lf\n"
+//             "areaRatioTolerance %lf centerDistTolerance %lf centerDistToleranceAbs %lf\n",
+//             config.numMarkers, config.circleDiameter, config.identify,
+//             config.initialCircularityTolerance, config.finalCircularityTolerance,
+//             config.areaRatioTolerance,config.centerDistanceToleranceRatio,config.centerDistanceToleranceAbs);
 
-    whycon->numMarkers = (config.numMarkers > whycon->maxMarkers) ? whycon->maxMarkers : config.numMarkers;
-    whycon->fieldLength = config.fieldLength;
-    whycon->fieldWidth = config.fieldWidth;
-    whycon->identify = config.identify;
+//     whycon->numMarkers = (config.numMarkers > whycon->maxMarkers) ? whycon->maxMarkers : config.numMarkers;
+//     whycon->fieldLength = config.fieldLength;
+//     whycon->fieldWidth = config.fieldWidth;
+//     whycon->identify = config.identify;
 
-    whycon->trans->reconfigure(config.circleDiameter);
+//     whycon->trans->reconfigure(config.circleDiameter);
 
-    for (int i = 0;i<whycon->maxMarkers;i++) whycon->detectorArray[i]->reconfigure(\
-            config.initialCircularityTolerance, config.finalCircularityTolerance,\
-            config.areaRatioTolerance,config.centerDistanceToleranceRatio,\
-            config.centerDistanceToleranceAbs, config.identify, config.minSize);
-}
+//     for (int i = 0;i<whycon->maxMarkers;i++) whycon->detectorArray[i]->reconfigure(
+//             config.initialCircularityTolerance, config.finalCircularityTolerance,
+//             config.areaRatioTolerance,config.centerDistanceToleranceRatio,
+//             config.centerDistanceToleranceAbs, config.identify, config.minSize);
+// }
 
 // cleaning up
 CWhycon::~CWhycon(){
-    ROS_DEBUG("Releasing memory.");
+    RCLCPP_DEBUG(get_logger(),"Releasing memory.");
     free(calibTmp);
     free(objectArray);
     free(currInnerSegArray);
@@ -391,74 +389,62 @@ CWhycon::~CWhycon(){
     free(detectorArray);
     delete trans;
     delete decoder;
-    delete n;
+    delete this;
 }
 
-CWhycon::CWhycon(){
+CWhycon::CWhycon()
+    : Node(PKG_NAME)
+{
+    // image_transport::ImageTransport it(*n);
+    // image = new CRawImage(imageWidth,imageHeight, 3);
+
+    // // loading params and args from launch file
+    // fontPath = fPath;
+    // calibDefPath = calPath;
+    // this->param("useGui", useGui, true);
+    // this->param("idBits", idBits, 5);
+    // this->param("idSamples", idSamples, 360);
+    // this->param("hammingDist", hammingDist, 1);
+    // this->param("maxMarkers", maxMarkers, 50);
+
+    // moveOne = moveVal;
+    // moveOne  = 0;
+    // calibTmp = (STrackedObject*) malloc(calibrationSteps * sizeof(STrackedObject));
+
+    // objectArray = (STrackedObject*) malloc(maxMarkers * sizeof(STrackedObject));
+    // currInnerSegArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
+    // currentSegmentArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
+    // lastSegmentArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
+
+    // // determine gui size so that it fits the screen
+    // while (imageHeight/guiScale > screenHeight || imageHeight/guiScale > screenWidth) guiScale = guiScale*2;
+
+    // // initialize GUI, image structures, coordinate transformation modules
+    // if (useGui) gui = new CGui(imageWidth,imageHeight,guiScale, fontPath.c_str());
+    // trans = new CTransformation(imageWidth,imageHeight,circleDiameter, calibDefPath.c_str());
+    // trans->transformType = TRANSFORM_NONE;		//in our case, 2D is the default
+
+    // detectorArray = (CCircleDetect**) malloc(maxMarkers * sizeof(CCircleDetect*));
+
+    // // initialize the circle detectors - each circle has its own detector instance 
+    // for (int i = 0;i<maxMarkers;i++) detectorArray[i] = new CCircleDetect(imageWidth,imageHeight,identify, idBits, idSamples, hammingDist);
+    // image->getSaveNumber();
+
+    // decoder = new CNecklace(idBits,idSamples,hammingDist);
+
+    // // initialize dynamic reconfiguration feedback
+    // dynSer = boost::bind(&CWhycon::reconfigureCallback, this, _1, _2);
+    // server.setCallback(dynSer);
+
+    // // subscribe to camera topic, publish topis with card position, rotation and ID
+    // subInfo = this->subscribe("/camera/camera_info", 1, &CWhycon::cameraInfoCallback, this);
+    // subImg = it.subscribe("/camera/image_raw", 1, &CWhycon::imageCallback, this);
+    // markers_pub = this->advertise<whycon_ros::MarkerArray>("markers", 1);
 }
 
-void CWhycon::init(char *fPath, char *calPath){
-    n = new ros::NodeHandle("~");
-    image_transport::ImageTransport it(*n);
-    image = new CRawImage(imageWidth,imageHeight, 3);
-
-    // loading params and args from launch file
-    fontPath = fPath;
-    calibDefPath = calPath;
-    n->param("useGui", useGui, true);
-    n->param("idBits", idBits, 5);
-    n->param("idSamples", idSamples, 360);
-    n->param("hammingDist", hammingDist, 1);
-    n->param("maxMarkers", maxMarkers, 50);
-
-    moveOne = moveVal;
-    moveOne  = 0;
-    calibTmp = (STrackedObject*) malloc(calibrationSteps * sizeof(STrackedObject));
-
-    objectArray = (STrackedObject*) malloc(maxMarkers * sizeof(STrackedObject));
-    currInnerSegArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
-    currentSegmentArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
-    lastSegmentArray = (SSegment*) malloc(maxMarkers * sizeof(SSegment));
-
-    // determine gui size so that it fits the screen
-    while (imageHeight/guiScale > screenHeight || imageHeight/guiScale > screenWidth) guiScale = guiScale*2;
-
-    // initialize GUI, image structures, coordinate transformation modules
-    if (useGui) gui = new CGui(imageWidth,imageHeight,guiScale, fontPath.c_str());
-    trans = new CTransformation(imageWidth,imageHeight,circleDiameter, calibDefPath.c_str());
-    trans->transformType = TRANSFORM_NONE;		//in our case, 2D is the default
-
-    detectorArray = (CCircleDetect**) malloc(maxMarkers * sizeof(CCircleDetect*));
-
-    // initialize the circle detectors - each circle has its own detector instance 
-    for (int i = 0;i<maxMarkers;i++) detectorArray[i] = new CCircleDetect(imageWidth,imageHeight,identify, idBits, idSamples, hammingDist);
-    image->getSaveNumber();
-
-    decoder = new CNecklace(idBits,idSamples,hammingDist);
-
-    // initialize dynamic reconfiguration feedback
-    dynSer = boost::bind(&CWhycon::reconfigureCallback, this, _1, _2);
-    server.setCallback(dynSer);
-
-    // subscribe to camera topic, publish topis with card position, rotation and ID
-    subInfo = n->subscribe("/camera/camera_info", 1, &CWhycon::cameraInfoCallback, this);
-    subImg = it.subscribe("/camera/image_raw", 1, &CWhycon::imageCallback, this);
-    markers_pub = n->advertise<whycon_ros::MarkerArray>("markers", 1);
-
-    while (ros::ok()){
-        ros::spinOnce();
-        usleep(30000);
-        if(stop) break;
-    }
-}
-
-int main(int argc,char* argv[]){
-    ros::init(argc, argv, "whycon_ros");
-
-    CWhycon *whycon = new CWhycon();
-    whycon->init(argv[1], argv[2]);
-
-    delete whycon;
-
-    return 0;
+int main(int argc, char *argv[]) {
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<CWhycon>());
+  rclcpp::shutdown();
+  return 0;
 }

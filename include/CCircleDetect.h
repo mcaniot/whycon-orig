@@ -65,7 +65,7 @@ class CCircleDetect
         float normalizeAngle(float a);
 
         // adjust the dimensions of the image, when the image size changes
-        int adjustDimensions(int wi, int he);
+        void adjustDimensions(int wi, int he);
 
         bool draw,lastTrackOK;      // flags to draw results - used for debugging
         int debug;                  // debug level

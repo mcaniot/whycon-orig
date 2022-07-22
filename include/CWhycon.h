@@ -19,22 +19,22 @@
 #include "CRawImage.h"
 
 // ROS libraries
-#include <ros/ros.h>
-#include <tf/tf.h>
-#include <image_transport/image_transport.h>
-#include <dynamic_reconfigure/server.h>
-#include <whycon_ros/whyconConfig.h>
-#include <whycon_ros/MarkerArray.h>
-#include <whycon_ros/Marker.h>
-#include <geometry_msgs/Quaternion.h>
+#include "rclcpp/rclcpp.hpp"
+// #include <tf/tf.h>
+#include "image_transport/image_transport.hpp"
+// #include <dynamic_reconfigure/server.h>
+// #include <whycon_ros/whyconConfig.h>
+#include <geometry_msgs/msg/quaternion.hpp>
 
 using namespace cv;
 
 
-class CWhycon {
+class CWhycon : public rclcpp::Node
+{
 
     public:
-
+        CWhycon();
+        ~CWhycon();
         int imageWidth = 640;          // default camera resolution
         int imageHeight = 480;         // default camera resolution
         float circleDiameter = 0.122;  // default black circle diameter [m];
@@ -58,15 +58,11 @@ class CWhycon {
         int moveVal = 1;        // how many frames to process ?
         int moveOne = moveVal;  // how many frames to process now (setting moveOne to 0 or lower freezes the video stream)
 
-        CWhycon();
-        ~CWhycon();
-        void init(char *fPath, char *calPath);  // creates nessesary objects and segment detectors
-
-        void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg);
-        void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+        // void cameraInfoCallback(const sensor_msgs::msg::CameraInfoConstPtr& msg);
+        // void imageCallback(const sensor_msgs::msg::ImageConstPtr& msg);
 
         // dynamic parameter reconfiguration
-        static void reconfigureCallback(CWhycon *whycon, whycon_ros::whyconConfig& config, uint32_t level);
+        // static void reconfigureCallback(CWhycon *whycon, whycon_ros::whyconConfig& config, uint32_t level);
 
     private:
 
@@ -107,14 +103,13 @@ class CWhycon {
         CTransformation *trans;         // allows to transform from image to metric coordinates
         CNecklace *decoder;             // Necklace code decoder
 
-        ros::NodeHandle *n;                     // ROS node
-        ros::Subscriber subInfo;                // camera info subscriber
-        image_transport::Subscriber subImg;     // image raw subscriber
-        ros::Publisher markers_pub;             // publisher of MarkerArray
+        // rclcpp::Subscriber subInfo;                // camera info subscriber
+        // image_transport::Subscriber subImg;     // image raw subscriber
+        // rclcpp::Publisher markers_pub;             // publisher of MarkerArray
         CRawImage *image;                       // encapsulation of image raw data
 
-        dynamic_reconfigure::Server<whycon_ros::whyconConfig> server;                   // server for dynamic reconfigure
-        dynamic_reconfigure::Server<whycon_ros::whyconConfig>::CallbackType dynSer;     // callback server to handle reconfigure function
+        // dynamic_reconfigure::Server<whycon_ros::whyconConfig> server;                   // server for dynamic reconfigure
+        // dynamic_reconfigure::Server<whycon_ros::whyconConfig>::CallbackType dynSer;     // callback server to handle reconfigure function
 
         std::string fontPath;           // path to GUI font
         std::string calibDefPath;       // path to user defined coordinate calibration

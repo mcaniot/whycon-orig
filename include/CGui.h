@@ -21,7 +21,7 @@ class CGui
         void clearStats();
         void saveScreen(int a = -1);
         void update();
-        void drawEllipse(SSegment s,STrackedObject t);
+        void drawEllipse(SSegment s);
         void drawLine(float sx1,float sx2,float sy1,float sy2);
         void displayHelp(bool extended);
         void drawStats(int x,int y,STrackedObject o, bool D2);

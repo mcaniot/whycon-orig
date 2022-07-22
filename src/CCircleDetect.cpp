@@ -61,7 +61,7 @@ void CCircleDetect::reconfigure(float ict,float fct,float art,float cdtr,float c
     identify = id;
 }
 
-int CCircleDetect::adjustDimensions(int wi, int he) {
+void CCircleDetect::adjustDimensions(int wi, int he) {
     width = wi;
     height = he;
     len = width*height;
@@ -173,7 +173,8 @@ bool CCircleDetect::examineSegment(CRawImage *image, SSegment *segmen, int ii, f
         segmen->y = (segmen->maxy + segmen->miny) / 2;
         segmen->roundness = vx * vy * areaRatio / segmen->size;
         //we check if the segment is likely to be a ring
-        if (segmen->roundness - circularTolerance < 1.0 && segmen->roundness + circularTolerance > 1.0 || true) {//TODO
+        // if (segmen->roundness - circularTolerance < 1.0 && segmen->roundness + circularTolerance > 1.0 || true){//TODO ???
+        if (segmen->roundness - circularTolerance < 1.0 && segmen->roundness + circularTolerance > 1.0) {
             //if its round, we compute yet another properties 
             segmen->round = true;
             segmen->mean = 0;

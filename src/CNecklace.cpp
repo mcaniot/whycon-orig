@@ -20,7 +20,7 @@ CNecklace::CNecklace(int bits, int samples, int minimalHamming)
         /*check if there is a lower number that could be created by bitshifting it*/
         tempID  = id;
         rotations = 0;
-        int cached [length - 1];
+        int *cached = new int[length - 1];
         bool isSymmetrical = false;
         minHam = 1000;
         if (debug) printf("Testing %i\n",tempID);
@@ -216,27 +216,38 @@ int CNecklace::identifySegment(SSegment *segment, STrackedObject *object, CRawIm
     int step = image->bpp;
 
     int pos;
-    float x[2][idSamples];
-    float y[2][idSamples];
-    float signal[2][idSamples];
-    float smooth[2][idSamples];
+    auto x = new float*[2];
+    auto y = new float*[2];
+    auto signal = new float*[2];
+    auto smooth = new float*[2];
+ 
+    for (int i = 0; i < 2; i++) {
+        x[i] = new float[idSamples];
+        y[i] = new float[idSamples];
+        signal[i] = new float[idSamples];
+        smooth[i] = new float[idSamples];
+    }
+
     int segmentWidth = idSamples/length/2;
 
     int maxIdx[2];
     float numPoints[2];
     int maxIndex = 0;
-
-    char code[2][length*4];
+   
+    auto code = new char*[2];
+    auto realCode = new char*[2];
+ 
+    for (int i = 0; i < 2; i++) {
+        code[i] = new char[length*4];
+        realCode[i] = new char[length*4];
+    }
     int edgeIndex[2];
-    char realCode[2][length*4];
     int ID[2];
     SNecklace result[2];
 
     for(int i=0;i<2;i++){
 
         //calculate appropriate positions
-        float topY = 0;
-        int topIndex = 0;
         for (int a = 0;a<idSamples;a++){
             x[i][a] = tmp[i].x+(tmp[i].m0*cos((float)a/idSamples*2*M_PI)*tmp[i].v0+tmp[i].m1*sin((float)a/idSamples*2*M_PI)*tmp[i].v1)*2.0;
             y[i][a] = tmp[i].y+(tmp[i].m0*cos((float)a/idSamples*2*M_PI)*tmp[i].v1-tmp[i].m1*sin((float)a/idSamples*2*M_PI)*tmp[i].v0)*2.0;
@@ -265,7 +276,6 @@ int CNecklace::identifySegment(SSegment *segment, STrackedObject *object, CRawIm
         for (int a = 0;a<idSamples;a++) if (signal[i][a] > avg) smooth[i][a] = 1; else smooth[i][a] = 0;
 
         //find the edge's locations
-        int numEdges = 0;  // variable not used at all
         float sx,sy;
 
         sx = sy = 0;
@@ -299,19 +309,19 @@ int CNecklace::identifySegment(SSegment *segment, STrackedObject *object, CRawIm
         variance[i] = sum[i] / numPoints[i];
 
         //determine raw code
-        for (int a = 0;a<length*2;a++) code[i][a] = smooth[i][(maxIdx[i]+a*segmentWidth)%idSamples]+'0';
+        for (int a = 0;a<int(length*2);a++) code[i][a] = smooth[i][(maxIdx[i]+a*segmentWidth)%idSamples]+'0';
 
         code[i][length*2] = 0;
 
         //determine the control edges' positions
         edgeIndex[i] = 0;
-        for (unsigned int a=0;a<length*2;a++){
+        for (unsigned int a=0;a<(unsigned int)(length*2);a++){
             int p = (a+1)%(length*2);
             if (code[i][a]=='0' && code[i][p]=='0') edgeIndex[i] = a;
         }
         edgeIndex[i] = 1-(edgeIndex[i]%2);
         ID[i] = 0;
-        for (unsigned int a=0;a<length;a++){
+        for (unsigned int a=0;a<(unsigned int)(length);a++){
             realCode[i][a] = code[i][edgeIndex[i]+2*a];
 //            if (realCode[i][a] == 'X') ID[i] = -1;
             if (ID[i] > -1){
