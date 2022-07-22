@@ -25,6 +25,7 @@
 // #include <dynamic_reconfigure/server.h>
 // #include <whycon_ros/whyconConfig.h>
 #include <geometry_msgs/msg/quaternion.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
 
 using namespace cv;
 
@@ -58,7 +59,7 @@ class CWhycon : public rclcpp::Node
         int moveVal = 1;        // how many frames to process ?
         int moveOne = moveVal;  // how many frames to process now (setting moveOne to 0 or lower freezes the video stream)
 
-        // void cameraInfoCallback(const sensor_msgs::msg::CameraInfoConstPtr& msg);
+        void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
         // void imageCallback(const sensor_msgs::msg::ImageConstPtr& msg);
 
         // dynamic parameter reconfiguration

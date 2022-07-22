@@ -154,21 +154,21 @@ void CWhycon::processKeys(){
     memcpy(lastKeys,keys,keyNumber);
 }
 
-// void CWhycon::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg){
-//     if(msg->K[0] == 0){
-//         rclcpp::shutdown();
-//     }
-//     if(msg->K[0] != intrinsic.at<float>(0,0) || msg->K[2] != intrinsic.at<float>(0,2) || msg->K[4] != intrinsic.at<float>(1,1) ||  msg->K[5] != intrinsic.at<float>(1,2)){
-//         for(int i = 0; i < 5; i++) distCoeffs.at<float>(i) = msg->D[i];
-//         int tmpIdx = 0;
-//         for(int i = 0; i < 3; i++){
-//             for(int j = 0; j < 3; j++){
-//                 intrinsic.at<float>(i, j) = msg->K[tmpIdx++];
-//             }
-//         }
-//         trans->updateParams(intrinsic, distCoeffs);
-//     }
-// }
+void CWhycon::cameraInfoCallback(const sensor_msgs::msg::CameraInfo::SharedPtr msg){
+    if(msg->k[0] == 0){
+        rclcpp::shutdown();
+    }
+    if(msg->k[0] != intrinsic.at<float>(0,0) || msg->k[2] != intrinsic.at<float>(0,2) || msg->k[4] != intrinsic.at<float>(1,1) ||  msg->k[5] != intrinsic.at<float>(1,2)){
+        for(int i = 0; i < 5; i++) distCoeffs.at<float>(i) = msg->d[i];
+        int tmpIdx = 0;
+        for(int i = 0; i < 3; i++){
+            for(int j = 0; j < 3; j++){
+                intrinsic.at<float>(i, j) = msg->k[tmpIdx++];
+            }
+        }
+        trans->updateParams(intrinsic, distCoeffs);
+    }
+}
 
 // void CWhycon::imageCallback(const sensor_msgs::ImageConstPtr& msg){
 //     //setup timers to assess system performance
