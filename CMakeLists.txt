@@ -22,6 +22,7 @@ find_package(visualization_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(SDL)
 find_package(OpenCV REQUIRED)
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS

@@ -39,9 +39,9 @@ class CWhycon : public rclcpp::Node
     public:
         CWhycon();
         ~CWhycon();
-        int imageWidth = 640;          // default camera resolution
-        int imageHeight = 480;         // default camera resolution
-        float circleDiameter = 0.122;  // default black circle diameter [m];
+        int imageWidth = 1280;          // default camera resolution
+        int imageHeight = 720;         // default camera resolution
+        float circleDiameter = 0.012;  // default black circle diameter [m];
         float fieldLength = 1.0;       // X dimension of the coordinate system
         float fieldWidth = 1.0;        // Y dimension of the coordinate system
 

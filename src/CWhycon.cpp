@@ -1,5 +1,5 @@
 #include "CWhycon.h"
-std::string PKG_NAME = "whycon_node";
+std::string PKG_NAME = "whycon_ros";
 using std::placeholders::_1;
 
 /*manual calibration can be initiated by pressing 'r' and then clicking circles at four positions (0,0)(fieldLength,0)...*/
@@ -374,11 +374,16 @@ CWhycon::CWhycon()
     std::string package_share_directory = ament_index_cpp::get_package_share_directory(PKG_NAME);
     fontPath = package_share_directory + "/etc/font.ttf";
     calibDefPath = package_share_directory + "/etc/default.cal";
-    this->get_parameter("useGui", useGui);
-    this->get_parameter("idBits", idBits);
-    this->get_parameter("idSamples", idSamples);
-    this->get_parameter("hammingDist", hammingDist);
-    this->get_parameter("maxMarkers", maxMarkers);
+    // this->get_parameter("useGui", useGui);
+    // this->get_parameter("idBits", idBits);
+    // this->get_parameter("idSamples", idSamples);
+    // this->get_parameter("hammingDist", hammingDist);
+    // this->get_parameter("maxMarkers", maxMarkers);
+    useGui = true;
+    idBits = 5;
+    idSamples = 360;
+    hammingDist = 1;
+    maxMarkers = 10;
 
     moveOne = moveVal;
     moveOne  = 0;
@@ -407,10 +412,10 @@ CWhycon::CWhycon()
 
     // subscribe to camera topic, publish topis with card position, rotation and ID
     subInfo = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-        "/camera/camera_info", 10,
+        "/camera/color/camera_info", 10,
         std::bind(&CWhycon::cameraInfoCallback, this, _1));
     subImg = this->create_subscription<sensor_msgs::msg::Image>(
-        "/camera/image_raw", 10,
+        "/camera/color/image_raw", 10,
         std::bind(&CWhycon::imageCallback, this, _1));
     markers_pub = this->create_publisher<visualization_msgs::msg::MarkerArray>("markers", 1);
 }
