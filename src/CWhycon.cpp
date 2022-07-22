@@ -170,186 +170,180 @@ void CWhycon::cameraInfoCallback(const sensor_msgs::msg::CameraInfo::SharedPtr m
     }
 }
 
-// void CWhycon::imageCallback(const sensor_msgs::ImageConstPtr& msg){
-//     //setup timers to assess system performance
-//     CTimer timer;
-//     timer.reset();
-//     timer.start();
+void CWhycon::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg){
+    //setup timers to assess system performance
+    CTimer timer;
+    timer.reset();
+    timer.start();
 
-//     CTimer globalTimer;
-//     globalTimer.reset();
-//     globalTimer.start();
+    CTimer globalTimer;
+    globalTimer.reset();
+    globalTimer.start();
 
-//     // check if readjusting of camera is needed
-//     if (image->bpp != msg->step/msg->width || image->width != msg->width || image->height != msg->height){
-//         delete image;
-//         RCLCPP_INFO(get_logger(),"Readjusting image format from %ix%i %ibpp, to %ix%i %ibpp.",
-//                 image->width, image->height, image->bpp, msg->width, msg->height, msg->step/msg->width);
-//         image = new CRawImage(msg->width,msg->height,msg->step/msg->width);
-//         if(useGui){
-//             while(image->height/guiScale > screenHeight || image->height/guiScale > screenWidth) guiScale = guiScale*2;
-//             if(gui == NULL){
-//                 gui = new CGui(msg->width, msg->height, guiScale, fontPath.c_str());
-//             }else{
-//                 delete gui;
-//                 gui = new CGui(msg->width, msg->height, guiScale, fontPath.c_str());
-//             }
-//         }
-//     }
+    // check if readjusting of camera is needed
+    if (image->bpp != int(msg->step/msg->width) || image->width != int(msg->width) || image->height != int(msg->height)){
+        delete image;
+        RCLCPP_INFO(get_logger(),"Readjusting image format from %ix%i %ibpp, to %ix%i %ibpp.",
+                image->width, image->height, image->bpp, msg->width, msg->height, msg->step/msg->width);
+        image = new CRawImage(msg->width,msg->height,msg->step/msg->width);
+        if(useGui){
+            while(image->height/guiScale > screenHeight || image->height/guiScale > screenWidth) guiScale = guiScale*2;
+            if(gui == NULL){
+                gui = new CGui(msg->width, msg->height, guiScale, fontPath.c_str());
+            }else{
+                delete gui;
+                gui = new CGui(msg->width, msg->height, guiScale, fontPath.c_str());
+            }
+        }
+    }
 
-//     memcpy(image->data,(void*)&msg->data[0],msg->step*msg->height);
+    memcpy(image->data,(void*)&msg->data[0],msg->step*msg->height);
 
-//     numFound = numStatic = 0;
-//     timer.reset();
+    numFound = numStatic = 0;
+    timer.reset();
 
-//     // track the robots found in the last attempt 
-//     for (int i = 0;i<numMarkers;i++){
-//         if (currentSegmentArray[i].valid){
-//             lastSegmentArray[i] = currentSegmentArray[i];
-//             currentSegmentArray[i] = detectorArray[i]->findSegment(image,lastSegmentArray[i]);
-//             currInnerSegArray[i] = detectorArray[i]->getInnerSegment();
-//         }
-//     }
+    // track the robots found in the last attempt 
+    for (int i = 0;i<numMarkers;i++){
+        if (currentSegmentArray[i].valid){
+            lastSegmentArray[i] = currentSegmentArray[i];
+            currentSegmentArray[i] = detectorArray[i]->findSegment(image,lastSegmentArray[i]);
+            currInnerSegArray[i] = detectorArray[i]->getInnerSegment();
+        }
+    }
 
-//     // search for untracked (not detected in the last frame) robots 
-//     for (int i = 0;i<numMarkers;i++){
-//         if (currentSegmentArray[i].valid == false){
-//             lastSegmentArray[i].valid = false;
-//             currentSegmentArray[i] = detectorArray[i]->findSegment(image,lastSegmentArray[i]);
-//             currInnerSegArray[i] = detectorArray[i]->getInnerSegment();
-//         }
-//         if (currentSegmentArray[i].valid == false) break;		//does not make sense to search for more patterns if the last one was not found
-//     }
+    // search for untracked (not detected in the last frame) robots 
+    for (int i = 0;i<numMarkers;i++){
+        if (currentSegmentArray[i].valid == false){
+            lastSegmentArray[i].valid = false;
+            currentSegmentArray[i] = detectorArray[i]->findSegment(image,lastSegmentArray[i]);
+            currInnerSegArray[i] = detectorArray[i]->getInnerSegment();
+        }
+        if (currentSegmentArray[i].valid == false) break;		//does not make sense to search for more patterns if the last one was not found
+    }
 
-//     // perform transformations from camera to world coordinates
-//     for (int i = 0;i<numMarkers;i++){
-//         if (currentSegmentArray[i].valid){
-//             int step = image->bpp;
-//             int pos;
-//             pos = ((int)currentSegmentArray[i].x+((int)currentSegmentArray[i].y)*image->width);
-//             image->data[step*pos+0] = 255;
-//             image->data[step*pos+1] = 0;
-//             image->data[step*pos+2] = 0;
-//             pos = ((int)currInnerSegArray[i].x+((int)currInnerSegArray[i].y)*image->width);
-//             image->data[step*pos+0] = 0;
-//             image->data[step*pos+1] = 255;
-//             image->data[step*pos+2] = 0;
+    // perform transformations from camera to world coordinates
+    for (int i = 0;i<numMarkers;i++){
+        if (currentSegmentArray[i].valid){
+            int step = image->bpp;
+            int pos;
+            pos = ((int)currentSegmentArray[i].x+((int)currentSegmentArray[i].y)*image->width);
+            image->data[step*pos+0] = 255;
+            image->data[step*pos+1] = 0;
+            image->data[step*pos+2] = 0;
+            pos = ((int)currInnerSegArray[i].x+((int)currInnerSegArray[i].y)*image->width);
+            image->data[step*pos+0] = 0;
+            image->data[step*pos+1] = 255;
+            image->data[step*pos+2] = 0;
 
-//             objectArray[i] = trans->transform(currentSegmentArray[i]);
+            objectArray[i] = trans->transform(currentSegmentArray[i]);
 
-//             if(identify){
-//                 int segmentID = decoder->identifySegment(&currentSegmentArray[i], &objectArray[i], image) + 1;
-//                 // if (debug) printf("SEGMENT ID: %i\n", segmentID);
-//                 if (segmentID > -1){
-//                     // objectArray[i].yaw = currentSegmentArray[i].angle;
-//                     currentSegmentArray[i].ID = segmentID;
-//                 }else{
-//                     currentSegmentArray[i].angle = lastSegmentArray[i].angle;
-//                     currentSegmentArray[i].ID = lastSegmentArray[i].ID;
-//                 }
-//             }else{
-//                 float dist1 = sqrt((currInnerSegArray[i].x-objectArray[i].segX1)*(currInnerSegArray[i].x-objectArray[i].segX1)+(currInnerSegArray[i].y-objectArray[i].segY1)*(currInnerSegArray[i].y-objectArray[i].segY1));
-//                 float dist2 = sqrt((currInnerSegArray[i].x-objectArray[i].segX2)*(currInnerSegArray[i].x-objectArray[i].segX2)+(currInnerSegArray[i].y-objectArray[i].segY2)*(currInnerSegArray[i].y-objectArray[i].segY2));
-//                 if(dist1 < dist2){
-//                     currentSegmentArray[i].x = objectArray[i].segX1;
-//                     currentSegmentArray[i].y = objectArray[i].segY1;
-//                     objectArray[i].x = objectArray[i].x1;
-//                     objectArray[i].y = objectArray[i].y1;
-//                     objectArray[i].z = objectArray[i].z1;
-//                     objectArray[i].pitch = objectArray[i].pitch1;
-//                     objectArray[i].roll = objectArray[i].roll1;
-//                     objectArray[i].yaw = objectArray[i].yaw1;
-//                 }else{
-//                     currentSegmentArray[i].x = objectArray[i].segX2;
-//                     currentSegmentArray[i].y = objectArray[i].segY2;
-//                     objectArray[i].x = objectArray[i].x2;
-//                     objectArray[i].y = objectArray[i].y2;
-//                     objectArray[i].z = objectArray[i].z2;
-//                     objectArray[i].pitch = objectArray[i].pitch2;
-//                     objectArray[i].roll = objectArray[i].roll2;
-//                     objectArray[i].yaw = objectArray[i].yaw2;
-//                 }
-//                 currentSegmentArray[i].angle = 0;
-//             }
+            if(identify){
+                int segmentID = decoder->identifySegment(&currentSegmentArray[i], &objectArray[i], image) + 1;
+                // if (debug) printf("SEGMENT ID: %i\n", segmentID);
+                if (segmentID > -1){
+                    // objectArray[i].yaw = currentSegmentArray[i].angle;
+                    currentSegmentArray[i].ID = segmentID;
+                }else{
+                    currentSegmentArray[i].angle = lastSegmentArray[i].angle;
+                    currentSegmentArray[i].ID = lastSegmentArray[i].ID;
+                }
+            }else{
+                float dist1 = sqrt((currInnerSegArray[i].x-objectArray[i].segX1)*(currInnerSegArray[i].x-objectArray[i].segX1)+(currInnerSegArray[i].y-objectArray[i].segY1)*(currInnerSegArray[i].y-objectArray[i].segY1));
+                float dist2 = sqrt((currInnerSegArray[i].x-objectArray[i].segX2)*(currInnerSegArray[i].x-objectArray[i].segX2)+(currInnerSegArray[i].y-objectArray[i].segY2)*(currInnerSegArray[i].y-objectArray[i].segY2));
+                if(dist1 < dist2){
+                    currentSegmentArray[i].x = objectArray[i].segX1;
+                    currentSegmentArray[i].y = objectArray[i].segY1;
+                    objectArray[i].x = objectArray[i].x1;
+                    objectArray[i].y = objectArray[i].y1;
+                    objectArray[i].z = objectArray[i].z1;
+                    objectArray[i].pitch = objectArray[i].pitch1;
+                    objectArray[i].roll = objectArray[i].roll1;
+                    objectArray[i].yaw = objectArray[i].yaw1;
+                }else{
+                    currentSegmentArray[i].x = objectArray[i].segX2;
+                    currentSegmentArray[i].y = objectArray[i].segY2;
+                    objectArray[i].x = objectArray[i].x2;
+                    objectArray[i].y = objectArray[i].y2;
+                    objectArray[i].z = objectArray[i].z2;
+                    objectArray[i].pitch = objectArray[i].pitch2;
+                    objectArray[i].roll = objectArray[i].roll2;
+                    objectArray[i].yaw = objectArray[i].yaw2;
+                }
+                currentSegmentArray[i].angle = 0;
+            }
 
-//             numFound++;
-//             if (currentSegmentArray[i].x == lastSegmentArray[i].x) numStatic++;
+            numFound++;
+            if (currentSegmentArray[i].x == lastSegmentArray[i].x) numStatic++;
 
-//         }
-//     }
-//     // if(numFound > 0) ROS_INFO("Pattern detection time: %i us. Found: %i Static: %i.",globalTimer.getTime(),numFound,numStatic);
-//     evalTime = timer.getTime();
+        }
+    }
+    // if(numFound > 0) ROS_INFO("Pattern detection time: %i us. Found: %i Static: %i.",globalTimer.getTime(),numFound,numStatic);
+    evalTime = timer.getTime();
 
-//     // publishing information about tags 
-//     whycon_ros::MarkerArray markerArray;
-//     markerArray.header = msg->header;
+    // publishing information about tags 
+    visualization_msgs::msg::MarkerArray markerArray;
 
-//     for (int i = 0;i<numMarkers;i++){
-//         if (currentSegmentArray[i].valid){
-//             // printf("ID %d\n", currentSegmentArray[i].ID);
-//             whycon_ros::Marker marker;
+    for (int i = 0;i<numMarkers;i++){
+        if (currentSegmentArray[i].valid){
+            // printf("ID %d\n", currentSegmentArray[i].ID);
+            visualization_msgs::msg::Marker marker;
+            marker.header = msg->header;
+            marker.id = currentSegmentArray[i].ID;
+            marker.type = 0;
 
-//             marker.id = currentSegmentArray[i].ID;
-//             marker.u = currentSegmentArray[i].x;
-//             marker.v = currentSegmentArray[i].y;
-//             marker.size = currentSegmentArray[i].size;
+            marker.scale.x = currentSegmentArray[i].size;
+            marker.scale.y = currentSegmentArray[i].size;
+            marker.scale.z = currentSegmentArray[i].size;
 
-//             // Convert to ROS standard Coordinate System
-//             marker.position.position.x = -objectArray[i].y;
-//             marker.position.position.y = -objectArray[i].z;
-//             marker.position.position.z = objectArray[i].x;
+            // Convert to ROS standard Coordinate System
+            marker.pose.position.x = -objectArray[i].y;
+            marker.pose.position.y = -objectArray[i].z;
+            marker.pose.position.z = objectArray[i].x;
 
-//             // Convert YPR to Quaternion
-//             /*tf::Quaternion q;
-//             q.setRPY(objectArray[i].roll, objectArray[i].pitch, objectArray[i].yaw);
-//             marker.position.orientation.x = q.getX();
-//             marker.position.orientation.y = q.getY();
-//             marker.position.orientation.z = q.getZ();
-//             marker.position.orientation.w = q.getW();*/
+            // Convert YPR to Quaternion
 
-//             tf::Vector3 axis_vector(objectArray[i].pitch, objectArray[i].roll, objectArray[i].yaw);
-//             tf::Vector3 up_vector(0.0, 0.0, 1.0);
-//             tf::Vector3 right_vector = axis_vector.cross(up_vector);
-//             right_vector.normalized();
-//             tf::Quaternion quat(right_vector, -1.0*acos(axis_vector.dot(up_vector)));
-//             quat.normalize();
-//             geometry_msgs::Quaternion marker_orientation;
-//             tf::quaternionTFToMsg(quat, marker_orientation);
+            tf2::Vector3 axis_vector(objectArray[i].pitch, objectArray[i].roll, objectArray[i].yaw);
+            tf2::Vector3 up_vector(0.0, 0.0, 1.0);
+            tf2::Vector3 right_vector = axis_vector.cross(up_vector);
+            right_vector.normalized();
+            tf2::Quaternion quat(right_vector, -1.0*acos(axis_vector.dot(up_vector)));
+            quat.normalize();
 
-//             marker.position.orientation = marker_orientation;
+            marker.pose.orientation.x = quat.x();
+            marker.pose.orientation.y = quat.y();
+            marker.pose.orientation.z = quat.z();
+            marker.pose.orientation.w = quat.w();
 
-//             marker.yaw = currentSegmentArray[i].angle;
+            markerArray.markers.push_back(marker);
+        }
+    }
 
-//             markerArray.markers.push_back(marker);
-//         }
-//     }
+    if(markerArray.markers.size() > 0) markers_pub->publish(markerArray);
 
-//     if(markerArray.markers.size() > 0) markers_pub.publish(markerArray);
+    //draw stuff on the GUI 
+    if (useGui){
+        gui->drawImage(image);
+        gui->drawTimeStats(evalTime,numMarkers);
+        gui->displayHelp(displayHelp);
+        gui->guideCalibration(calibNum,fieldLength,fieldWidth);
+    }
+    for (int i = 0;i<numMarkers && useGui && drawCoords;i++){
+        if (currentSegmentArray[i].valid) gui->drawStats(currentSegmentArray[i].minx-30,currentSegmentArray[i].maxy,objectArray[i],trans->transformType == TRANSFORM_2D);
+    }
 
-//     //draw stuff on the GUI 
-//     if (useGui){
-//         gui->drawImage(image);
-//         gui->drawTimeStats(evalTime,numMarkers);
-//         gui->displayHelp(displayHelp);
-//         gui->guideCalibration(calibNum,fieldLength,fieldWidth);
-//     }
-//     for (int i = 0;i<numMarkers && useGui && drawCoords;i++){
-//         if (currentSegmentArray[i].valid) gui->drawStats(currentSegmentArray[i].minx-30,currentSegmentArray[i].maxy,objectArray[i],trans->transformType == TRANSFORM_2D);
-//     }
+    //establishing the coordinate system by manual or autocalibration
+    if (autocalibrate && numFound == numMarkers) autocalibration();
+    if (calibNum < 4) manualcalibration();
 
-//     //establishing the coordinate system by manual or autocalibration
-//     if (autocalibrate && numFound == numMarkers) autocalibration();
-//     if (calibNum < 4) manualcalibration();
+    /* empty for-cycle that isn't used even in master orig version
+       for (int i = 0;i<numMarkers;i++){
+    //if (currentSegmentArray[i].valid) printf("Object %i %03f %03f %03f %03f %03f\n",i,objectArray[i].x,objectArray[i].y,objectArray[i].z,objectArray[i].error,objectArray[i].esterror);
+    }*/
 
-//     /* empty for-cycle that isn't used even in master orig version
-//        for (int i = 0;i<numMarkers;i++){
-//     //if (currentSegmentArray[i].valid) printf("Object %i %03f %03f %03f %03f %03f\n",i,objectArray[i].x,objectArray[i].y,objectArray[i].z,objectArray[i].error,objectArray[i].esterror);
-//     }*/
-
-//     //gui->saveScreen(runs);
-//     if (useGui) gui->update();
-//     if (useGui) processKeys();
-// }
+    //gui->saveScreen(runs);
+    if (useGui) gui->update();
+    if (useGui) processKeys();
+}
 
 // dynamic parameter reconfiguration
 // void CWhycon::reconfigureCallback(CWhycon *whycon, whycon_ros::whyconConfig& config, uint32_t level){

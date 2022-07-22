@@ -20,12 +20,17 @@
 
 // ROS libraries
 #include "rclcpp/rclcpp.hpp"
-// #include <tf/tf.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Vector3.h>
 #include "image_transport/image_transport.hpp"
 // #include <dynamic_reconfigure/server.h>
 // #include <whycon_ros/whyconConfig.h>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+
 
 using namespace cv;
 
@@ -60,7 +65,7 @@ class CWhycon : public rclcpp::Node
         int moveOne = moveVal;  // how many frames to process now (setting moveOne to 0 or lower freezes the video stream)
 
         void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
-        // void imageCallback(const sensor_msgs::msg::ImageConstPtr& msg);
+        void imageCallback(const sensor_msgs::msg::Image::SharedPtr msg);
 
         // dynamic parameter reconfiguration
         // static void reconfigureCallback(CWhycon *whycon, whycon_ros::whyconConfig& config, uint32_t level);
@@ -106,7 +111,7 @@ class CWhycon : public rclcpp::Node
 
         // rclcpp::Subscriber subInfo;                // camera info subscriber
         // image_transport::Subscriber subImg;     // image raw subscriber
-        // rclcpp::Publisher markers_pub;             // publisher of MarkerArray
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr markers_pub; // publisher of MarkerArray
         CRawImage *image;                       // encapsulation of image raw data
 
         // dynamic_reconfigure::Server<whycon_ros::whyconConfig> server;                   // server for dynamic reconfigure
