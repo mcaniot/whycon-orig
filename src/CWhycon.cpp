@@ -374,16 +374,16 @@ CWhycon::CWhycon()
     std::string package_share_directory = ament_index_cpp::get_package_share_directory(PKG_NAME);
     fontPath = package_share_directory + "/etc/font.ttf";
     calibDefPath = package_share_directory + "/etc/default.cal";
-    // this->get_parameter("useGui", useGui);
-    // this->get_parameter("idBits", idBits);
-    // this->get_parameter("idSamples", idSamples);
-    // this->get_parameter("hammingDist", hammingDist);
-    // this->get_parameter("maxMarkers", maxMarkers);
-    useGui = true;
-    idBits = 5;
-    idSamples = 360;
-    hammingDist = 1;
-    maxMarkers = 10;
+    this->declare_parameter("useGui");
+    this->declare_parameter("idBits");
+    this->declare_parameter("idSamples");
+    this->declare_parameter("hammingDist");
+    this->declare_parameter("maxMarkers");
+    this->get_parameter("useGui", useGui);
+    this->get_parameter("idBits", idBits);
+    this->get_parameter("idSamples", idSamples);
+    this->get_parameter("hammingDist", hammingDist);
+    this->get_parameter("maxMarkers", maxMarkers);
 
     moveOne = moveVal;
     moveOne  = 0;
