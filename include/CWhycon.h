@@ -90,7 +90,7 @@ class CWhycon : public rclcpp::Node
         STrackedObject calib[5];                    // array to store calibration patterns positions
         STrackedObject *calibTmp;                   // array to store several measurements of a given calibration pattern
         int calibStep = calibrationSteps+2;         // actual calibration step (num of measurements of the actual pattern)
-        bool autocalibrate = true;                 // is the autocalibration in progress ?
+        bool autocalibrate = false;                 // is the autocalibration in progress ?
         ETransformType lastTransformType = TRANSFORM_2D;  // pre-calibration transform (used to preserve pre-calibation transform type)
         int wasMarkers = 1;                               // pre-calibration number of makrers to track (used to preserve pre-calibation number of markers to track)
 
