@@ -174,7 +174,7 @@ bool CCircleDetect::examineSegment(CRawImage *image, SSegment *segmen, int ii, f
         segmen->roundness = vx * vy * areaRatio / segmen->size;
         //we check if the segment is likely to be a ring
         // if (segmen->roundness - circularTolerance < 1.0 && segmen->roundness + circularTolerance > 1.0 || true){//TODO ???
-        if (segmen->roundness - circularTolerance < 1.0 && segmen->roundness + circularTolerance > 1.0 || true) {
+        if (true) {
             //if its round, we compute yet another properties 
             segmen->round = true;
             segmen->mean = 0;
