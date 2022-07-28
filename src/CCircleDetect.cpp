@@ -19,7 +19,7 @@ CCircleDetect::CCircleDetect(int wi, int he, bool id, int bits, int samples, int
     debug = false;
     draw = true;
     maxFailed = 0;
-    minSize = 100;
+    minSize = 10;
     maxThreshold = 256;
     centerDistanceToleranceRatio = 0.01;
     centerDistanceToleranceAbs = 5;
