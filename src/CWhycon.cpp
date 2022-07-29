@@ -374,11 +374,22 @@ CWhycon::CWhycon()
     std::string package_share_directory = ament_index_cpp::get_package_share_directory(PKG_NAME);
     fontPath = package_share_directory + "/etc/font.ttf";
     calibDefPath = package_share_directory + "/etc/default.cal";
+    // Declare param
+    this->declare_parameter("identify");
+    this->declare_parameter("circleDiameter");
+    this->declare_parameter("fieldLength");
+    this->declare_parameter("fieldWidth");
     this->declare_parameter("useGui");
     this->declare_parameter("idBits");
     this->declare_parameter("idSamples");
     this->declare_parameter("hammingDist");
     this->declare_parameter("maxMarkers");
+
+    // get Param
+    this->get_parameter("identify", identify);
+    this->get_parameter("circleDiameter", circleDiameter);
+    this->get_parameter("fieldLength", fieldLength);
+    this->get_parameter("fieldWidth", fieldWidth);
     this->get_parameter("useGui", useGui);
     this->get_parameter("idBits", idBits);
     this->get_parameter("idSamples", idSamples);
