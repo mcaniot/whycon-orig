@@ -384,6 +384,8 @@ CWhycon::CWhycon()
     this->get_parameter("idSamples", idSamples);
     this->get_parameter("hammingDist", hammingDist);
     this->get_parameter("maxMarkers", maxMarkers);
+    numMarkers = maxMarkers;
+
 
     moveOne = moveVal;
     moveOne  = 0;

@@ -5,7 +5,7 @@ whycon_ros:
     #Marker's outer diameter [cm]
     circleDiameter : 12.2
     #Number of markers to track
-    maxMarkers : 10
+    maxMarkers : 4
     # Min size of marker [px]
     minSize : 30
     #Distance of markers in x-axis in custom coordinate system
